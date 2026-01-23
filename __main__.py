@@ -5,6 +5,10 @@ This is the main entry point for the Pulumi program.
 It orchestrates the deployment of all infrastructure components.
 """
 
+# Load environment variables from .env file (must be before other imports)
+from dotenv import load_dotenv
+load_dotenv()
+
 import pulumi
 from pulumi_azure_native import authorization
 

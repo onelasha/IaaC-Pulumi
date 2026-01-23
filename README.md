@@ -15,8 +15,10 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 - [Security Policies](#security-policies)
 - [Testing](#testing)
 - [Deployment](#deployment)
+- [Adding New Environments](#adding-new-environments)
 - [Naming Conventions](#naming-conventions)
 - [Tagging Strategy](#tagging-strategy)
+- [Glossary](#glossary)
 - [Contributing](#contributing)
 
 ## Project Structure
@@ -144,7 +146,29 @@ uv sync
 uv sync --extra dev
 ```
 
-### 2. Azure Authentication
+### 2. Configure Environment Variables
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your values
+```
+
+Key variables in `.env`:
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `PULUMI_CONFIG_PASSPHRASE` | Encrypts stack secrets (avoids prompt) | Recommended |
+| `AZURE_STORAGE_ACCOUNT` | Storage account for Pulumi state | Yes |
+| `ARM_CLIENT_ID` | Service Principal app ID | CI/CD only |
+| `ARM_CLIENT_SECRET` | Service Principal password | CI/CD only |
+| `ARM_TENANT_ID` | Azure AD tenant ID | CI/CD only |
+| `ARM_SUBSCRIPTION_ID` | Azure subscription ID | CI/CD only |
+
+> **Note**: The `.env` file is automatically loaded when running Pulumi commands. Never commit `.env` to version control.
+
+### 3. Azure Authentication
 
 ```bash
 # Login to Azure
@@ -170,7 +194,7 @@ Production            yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy  Enabled  False
 
 > **Tip**: If you only have one subscription, it will be set as default automatically after `az login`.
 
-### 3. Initialize Pulumi Stack
+### 4. Initialize Pulumi Stack
 
 ```bash
 # Set Azure Storage backend (recommended for teams)
@@ -187,7 +211,7 @@ pulumi stack select dev 2>/dev/null || pulumi stack init dev
 
 > **Note**: Use `stack select` for existing stacks, `stack init` for new ones. Neither command provisions resources—they only manage stack metadata. See [State Backend Configuration](#state-backend-configuration) for detailed setup instructions.
 
-### 4. Configure the Stack
+### 5. Configure the Stack
 
 ```bash
 # Set Azure location
@@ -198,7 +222,7 @@ pulumi config set owner "Platform Team"
 pulumi config set costCenter "IT-001"
 ```
 
-### 5. Deploy
+### 6. Deploy
 
 > **Best Practice**: Always preview before applying. Never deploy without reviewing what will change.
 
@@ -642,6 +666,98 @@ jobs:
 
 > **Note**: The Service Principal needs `Storage Blob Data Contributor` role on the `pulumistateonelasha` storage account.
 
+## Adding New Environments
+
+This project supports multiple environments (dev, staging, prod, etc.). Each environment is a Pulumi **stack** with its own configuration.
+
+### Step 1: Add Environment Configuration
+
+Edit `config/settings.py` and add your environment to `ENVIRONMENT_CONFIGS`:
+
+```python
+"uat": EnvironmentSettings(
+    name="uat",
+    location="westus2",
+    network=NetworkSettings(
+        vnet_address_space=["10.3.0.0/16"],  # Use unique CIDR range
+        subnet_prefixes={
+            "gateway": "10.3.0.0/24",
+            "web": "10.3.1.0/24",
+            "app": "10.3.2.0/24",
+            "data": "10.3.3.0/24",
+            "management": "10.3.4.0/24",
+        },
+        enable_ddos_protection=False,
+        enable_firewall=False,
+    ),
+    security=SecuritySettings(
+        enable_purge_protection=False,
+        soft_delete_retention_days=30,
+        enable_private_endpoints=True,
+    ),
+    monitoring=MonitoringSettings(
+        log_retention_days=60,
+        daily_quota_gb=5.0,
+    ),
+),
+```
+
+### Step 2: Create the Stack
+
+```bash
+# Create new stack (this only creates metadata, no resources)
+pulumi stack init uat
+```
+
+### Step 3: Create Stack Configuration File
+
+Create `Pulumi.uat.yaml` in the project root:
+
+```yaml
+config:
+  azure-native:location: westus2
+  AzureInfra:owner: Your Team Name
+  AzureInfra:costCenter: IT-XXX
+```
+
+### Step 4: Preview and Deploy
+
+```bash
+# Select the new stack
+pulumi stack select uat
+
+# ALWAYS preview first
+pulumi preview
+
+# Deploy after reviewing
+pulumi up
+```
+
+### Environment CIDR Ranges
+
+To avoid network conflicts, use unique CIDR ranges per environment:
+
+| Environment | VNet CIDR | Purpose |
+|-------------|-----------|---------|
+| dev | 10.0.0.0/16 | Development |
+| staging | 10.1.0.0/16 | Pre-production testing |
+| prod | 10.2.0.0/16 | Production |
+| uat | 10.3.0.0/16 | User acceptance testing |
+| qa | 10.4.0.0/16 | Quality assurance |
+
+### Switching Between Environments
+
+```bash
+# List all stacks
+pulumi stack ls
+
+# Switch to a different environment
+pulumi stack select prod
+
+# View current stack
+pulumi stack
+```
+
 ## Naming Conventions
 
 Resources follow Azure naming best practices:
@@ -671,6 +787,32 @@ All resources are tagged with:
 | `Component` | Logical component | `networking` |
 | `Owner` | Team/individual owner | `Platform Team` |
 | `CostCenter` | Cost allocation | `IT-001` |
+
+## Glossary
+
+Key terms used in this project:
+
+| Term | Definition |
+|------|------------|
+| **Stack** | A Pulumi stack is an isolated, independently configurable instance of a Pulumi program. Each environment (dev, staging, prod) is a separate stack. Stacks allow you to deploy the same infrastructure code with different configurations. |
+| **State** | Pulumi state is a snapshot of your infrastructure. It tracks which resources exist, their properties, and dependencies. State is stored in a backend (Azure Blob Storage for this project). |
+| **Backend** | Where Pulumi stores state files. Options include Pulumi Cloud, Azure Blob Storage, AWS S3, or local filesystem. This project uses Azure Blob Storage (`azblob://pulumi-state`). |
+| **Preview** | A dry-run that shows what changes Pulumi would make without actually making them. Always run `pulumi preview` before `pulumi up`. |
+| **Up** | The command (`pulumi up`) that provisions or updates infrastructure to match your code. |
+| **Destroy** | The command (`pulumi destroy`) that tears down all resources in a stack. Use with caution. |
+| **ComponentResource** | A Pulumi abstraction that groups related resources together. This project uses components like `VNetComponent`, `StorageAccountComponent`, etc. |
+| **Resource Group** | An Azure container that holds related resources. Resources in a group share the same lifecycle and permissions. |
+| **CrossGuard** | Pulumi's policy-as-code framework. Policies in `policies/` enforce security and compliance rules. |
+| **Provider** | A Pulumi plugin that knows how to create and manage resources for a specific cloud (e.g., `azure-native` for Azure). |
+| **Config** | Stack-specific settings stored in `Pulumi.<stack>.yaml`. Access via `pulumi config set/get`. Secrets are encrypted. |
+| **Outputs** | Values exported from a Pulumi program (e.g., resource IDs, connection strings). View with `pulumi stack output`. |
+| **CIDR** | Classless Inter-Domain Routing. A notation for IP address ranges (e.g., `10.0.0.0/16` = 65,536 addresses). |
+| **NSG** | Network Security Group. Azure firewall rules that filter network traffic to/from resources. |
+| **VNet** | Virtual Network. An isolated network in Azure where you deploy resources. |
+| **Managed Identity** | An Azure identity for services to authenticate without storing credentials. Preferred over service principals for Azure-to-Azure auth. |
+| **Key Vault** | Azure service for securely storing secrets, keys, and certificates. |
+| **RBAC** | Role-Based Access Control. Azure's authorization system using roles like Contributor, Reader, Owner. |
+| **IaC** | Infrastructure as Code. Managing infrastructure through code (like this Pulumi project) rather than manual configuration. |
 
 ## Contributing
 
