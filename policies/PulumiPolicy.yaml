@@ -1,0 +1,6 @@
+name: azure-security-policies
+description: Security and compliance policies for Azure infrastructure
+runtime:
+  name: python
+  options:
+    toolchain: uv

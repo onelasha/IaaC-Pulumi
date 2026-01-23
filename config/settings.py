@@ -1,0 +1,154 @@
+"""Environment-specific settings and configuration."""
+
+from dataclasses import dataclass, field
+from typing import Optional
+import pulumi
+
+
+@dataclass
+class NetworkSettings:
+    """Network configuration for an environment."""
+
+    vnet_address_space: list[str]
+    subnet_prefixes: dict[str, str]
+    enable_ddos_protection: bool = False
+    enable_firewall: bool = False
+
+
+@dataclass
+class SecuritySettings:
+    """Security configuration for an environment."""
+
+    enable_purge_protection: bool = False
+    soft_delete_retention_days: int = 30
+    enable_private_endpoints: bool = False
+    allowed_ip_ranges: list[str] = field(default_factory=list)
+
+
+@dataclass
+class MonitoringSettings:
+    """Monitoring configuration for an environment."""
+
+    log_retention_days: int = 30
+    enable_diagnostic_settings: bool = True
+    daily_quota_gb: Optional[float] = None
+
+
+@dataclass
+class EnvironmentSettings:
+    """Complete settings for an environment."""
+
+    name: str
+    location: str
+    network: NetworkSettings
+    security: SecuritySettings
+    monitoring: MonitoringSettings
+    tags: dict[str, str] = field(default_factory=dict)
+
+
+# Environment-specific configurations
+ENVIRONMENT_CONFIGS = {
+    "dev": EnvironmentSettings(
+        name="dev",
+        location="westus2",
+        network=NetworkSettings(
+            vnet_address_space=["10.0.0.0/16"],
+            subnet_prefixes={
+                "gateway": "10.0.0.0/24",
+                "web": "10.0.1.0/24",
+                "app": "10.0.2.0/24",
+                "data": "10.0.3.0/24",
+                "management": "10.0.4.0/24",
+            },
+            enable_ddos_protection=False,
+            enable_firewall=False,
+        ),
+        security=SecuritySettings(
+            enable_purge_protection=False,
+            soft_delete_retention_days=7,
+            enable_private_endpoints=False,
+        ),
+        monitoring=MonitoringSettings(
+            log_retention_days=30,
+            daily_quota_gb=1.0,
+        ),
+    ),
+    "staging": EnvironmentSettings(
+        name="staging",
+        location="westus2",
+        network=NetworkSettings(
+            vnet_address_space=["10.1.0.0/16"],
+            subnet_prefixes={
+                "gateway": "10.1.0.0/24",
+                "web": "10.1.1.0/24",
+                "app": "10.1.2.0/24",
+                "data": "10.1.3.0/24",
+                "management": "10.1.4.0/24",
+            },
+            enable_ddos_protection=False,
+            enable_firewall=False,
+        ),
+        security=SecuritySettings(
+            enable_purge_protection=False,
+            soft_delete_retention_days=30,
+            enable_private_endpoints=True,
+        ),
+        monitoring=MonitoringSettings(
+            log_retention_days=60,
+            daily_quota_gb=5.0,
+        ),
+    ),
+    "prod": EnvironmentSettings(
+        name="prod",
+        location="westus2",
+        network=NetworkSettings(
+            vnet_address_space=["10.2.0.0/16"],
+            subnet_prefixes={
+                "gateway": "10.2.0.0/24",
+                "web": "10.2.1.0/24",
+                "app": "10.2.2.0/24",
+                "data": "10.2.3.0/24",
+                "management": "10.2.4.0/24",
+            },
+            enable_ddos_protection=True,
+            enable_firewall=True,
+        ),
+        security=SecuritySettings(
+            enable_purge_protection=True,
+            soft_delete_retention_days=90,
+            enable_private_endpoints=True,
+        ),
+        monitoring=MonitoringSettings(
+            log_retention_days=365,
+            daily_quota_gb=None,  # No limit
+        ),
+    ),
+}
+
+
+def get_environment_settings(environment: Optional[str] = None) -> EnvironmentSettings:
+    """
+    Get settings for the specified environment.
+
+    Args:
+        environment: Environment name. If None, reads from Pulumi stack name.
+
+    Returns:
+        EnvironmentSettings for the environment
+
+    Raises:
+        ValueError: If environment is not recognized
+    """
+    if environment is None:
+        # Infer from stack name
+        stack_name = pulumi.get_stack()
+        # Stack name might be 'org/project/dev' or just 'dev'
+        environment = stack_name.split("/")[-1]
+
+    if environment not in ENVIRONMENT_CONFIGS:
+        raise ValueError(
+            f"Unknown environment: {environment}. "
+            f"Valid environments: {list(ENVIRONMENT_CONFIGS.keys())}"
+        )
+
+    return ENVIRONMENT_CONFIGS[environment]
