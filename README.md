@@ -19,6 +19,7 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 - [Naming Conventions](#naming-conventions)
 - [Tagging Strategy](#tagging-strategy)
 - [Glossary](#glossary)
+- [Changelog](#changelog)
 - [Contributing](#contributing)
 
 ## Project Structure
@@ -813,6 +814,12 @@ Key terms used in this project:
 | **Key Vault** | Azure service for securely storing secrets, keys, and certificates. |
 | **RBAC** | Role-Based Access Control. Azure's authorization system using roles like Contributor, Reader, Owner. |
 | **IaC** | Infrastructure as Code. Managing infrastructure through code (like this Pulumi project) rather than manual configuration. |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
+
+When contributing, add your changes to the `[Unreleased]` section following the [Keep a Changelog](https://keepachangelog.com) format.
 
 ## Contributing
 
