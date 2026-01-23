@@ -1,0 +1,10 @@
+name: AzureInfra
+description: My AzureInfra Pulumi IaaC
+runtime:
+  name: python
+  options:
+    toolchain: uv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: azure-python
