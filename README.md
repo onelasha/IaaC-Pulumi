@@ -85,6 +85,7 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 │
 ├── scripts/                 # Deployment and utility scripts
 │   ├── deploy.sh            # Deployment script
+│   ├── pulumi.sh            # Wrapper script with auto .env loading
 │   └── validate.sh          # Validation script
 │
 └── docs/                    # Additional documentation
@@ -94,12 +95,12 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 
 ### Required Tools
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| [Python](https://python.org) | >= 3.12 | Runtime |
-| [uv](https://github.com/astral-sh/uv) | Latest | Python package manager |
-| [Pulumi CLI](https://www.pulumi.com/docs/install/) | >= 3.0 | Infrastructure deployment |
-| [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) | Latest | Azure authentication |
+| Tool                                                                      | Version | Purpose                   |
+| ------------------------------------------------------------------------- | ------- | ------------------------- |
+| [Python](https://python.org)                                              | >= 3.12 | Runtime                   |
+| [uv](https://github.com/astral-sh/uv)                                     | Latest  | Python package manager    |
+| [Pulumi CLI](https://www.pulumi.com/docs/install/)                        | >= 3.0  | Infrastructure deployment |
+| [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) | Latest  | Azure authentication      |
 
 ### Azure Requirements
 
@@ -158,16 +159,49 @@ cp .env.example .env
 
 Key variables in `.env`:
 
-| Variable | Purpose | Required |
-|----------|---------|----------|
+| Variable                   | Purpose                                | Required    |
+| -------------------------- | -------------------------------------- | ----------- |
 | `PULUMI_CONFIG_PASSPHRASE` | Encrypts stack secrets (avoids prompt) | Recommended |
-| `AZURE_STORAGE_ACCOUNT` | Storage account for Pulumi state | Yes |
-| `ARM_CLIENT_ID` | Service Principal app ID | CI/CD only |
-| `ARM_CLIENT_SECRET` | Service Principal password | CI/CD only |
-| `ARM_TENANT_ID` | Azure AD tenant ID | CI/CD only |
-| `ARM_SUBSCRIPTION_ID` | Azure subscription ID | CI/CD only |
+| `AZURE_STORAGE_ACCOUNT`    | Storage account for Pulumi state       | Yes         |
+| `ARM_CLIENT_ID`            | Service Principal app ID               | CI/CD only  |
+| `ARM_CLIENT_SECRET`        | Service Principal password             | CI/CD only  |
+| `ARM_TENANT_ID`            | Azure AD tenant ID                     | CI/CD only  |
+| `ARM_SUBSCRIPTION_ID`      | Azure subscription ID                  | CI/CD only  |
 
-> **Note**: The `.env` file is automatically loaded when running Pulumi commands. Never commit `.env` to version control.
+> **Note**: Never commit `.env` to version control.
+
+### Automatic `.env` Loading
+
+Pulumi doesn't natively load `.env` files. This project provides two methods:
+
+#### Option 1: Shell Alias (Recommended)
+
+Add this alias to your `~/.zshrc` or `~/.bashrc`:
+
+```bash
+# Pulumi with auto .env loading
+alias pulumi='if [ -f .env ]; then set -a && source .env && set +a; fi && command pulumi'
+```
+
+Then reload your shell:
+
+```bash
+source ~/.zshrc
+```
+
+Now `pulumi preview`, `pulumi up`, etc. will automatically load `.env`.
+
+#### Option 2: Wrapper Script
+
+Use the included wrapper script:
+
+```bash
+./scripts/pulumi.sh preview
+./scripts/pulumi.sh up
+./scripts/pulumi.sh destroy
+```
+
+The script automatically loads `.env` and validates required variables before running Pulumi.
 
 ### 3. Azure Authentication
 
@@ -186,6 +220,7 @@ az account show --output table
 ```
 
 Example output from `az account list`:
+
 ```
 Name                  SubscriptionId                        State    IsDefault
 --------------------  ------------------------------------  -------  ----------
@@ -278,6 +313,7 @@ pulumi whoami -v
 ```
 
 Expected output:
+
 ```
 User: <your-user>
 Backend URL: azblob://pulumi-state
@@ -285,12 +321,12 @@ Backend URL: azblob://pulumi-state
 
 ### Authentication Methods
 
-| Method | Environment Variable | Use Case |
-|--------|---------------------|----------|
-| Azure CLI (Recommended) | None - uses `az login` session | Local development |
-| Storage Account Key | `AZURE_STORAGE_KEY=<key>` | CI/CD pipelines |
-| SAS Token | `AZURE_STORAGE_SAS_TOKEN=<token>` | Limited access scenarios |
-| Service Principal | `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_TENANT_ID` | Automated deployments |
+| Method                  | Environment Variable                                  | Use Case                 |
+| ----------------------- | ----------------------------------------------------- | ------------------------ |
+| Azure CLI (Recommended) | None - uses `az login` session                        | Local development        |
+| Storage Account Key     | `AZURE_STORAGE_KEY=<key>`                             | CI/CD pipelines          |
+| SAS Token               | `AZURE_STORAGE_SAS_TOKEN=<token>`                     | Limited access scenarios |
+| Service Principal       | `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_TENANT_ID` | Automated deployments    |
 
 #### Using Azure CLI Authentication (Local Development)
 
@@ -335,12 +371,12 @@ pulumi login azblob://pulumi-state
 
 ### Backend Comparison
 
-| Backend | Command | Best For |
-|---------|---------|----------|
+| Backend            | Command                              | Best For                       |
+| ------------------ | ------------------------------------ | ------------------------------ |
 | Azure Blob Storage | `pulumi login azblob://pulumi-state` | Team collaboration, enterprise |
-| Pulumi Cloud | `pulumi login` | SaaS convenience, built-in UI |
-| Local Filesystem | `pulumi login --local` | Individual testing only |
-| AWS S3 | `pulumi login s3://bucket-name` | AWS-centric organizations |
+| Pulumi Cloud       | `pulumi login`                       | SaaS convenience, built-in UI  |
+| Local Filesystem   | `pulumi login --local`               | Individual testing only        |
+| AWS S3             | `pulumi login s3://bucket-name`      | AWS-centric organizations      |
 
 ### State Management Best Practices
 
@@ -386,12 +422,13 @@ pulumi stack import --file stack-backup.json
 
 ### Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `unauthorized` error | Run `az login` and ensure correct subscription |
-| `container not found` | Create container: `az storage container create --name pulumi-state --account-name pulumistateonelasha` |
-| `AZURE_STORAGE_ACCOUNT not set` | Export the environment variable |
-| State locked | Another operation in progress; wait or manually remove `.pulumi/locks` |
+| Issue                                                                | Solution                                                                                                         |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `unauthorized` error                                                 | Run `az login` and ensure correct subscription                                                                   |
+| `container not found`                                                | Create container: `az storage container create --name pulumi-state --account-name pulumistateonelasha`           |
+| `AZURE_STORAGE_ACCOUNT not set` or `Options.AccountName is required` | Export the variable or use the shell alias/wrapper script (see [Automatic .env Loading](#automatic-env-loading)) |
+| `incorrect passphrase`                                               | Ensure `PULUMI_CONFIG_PASSPHRASE` matches the value used when the stack was created                              |
+| State locked                                                         | Another operation in progress; wait or manually remove `.pulumi/locks`                                           |
 
 ## Architecture
 
@@ -436,6 +473,7 @@ This project implements a **layered architecture** with clear separation of conc
 ### Core (`infra/core/`)
 
 Foundation module providing:
+
 - **Resource Groups**: Standardized resource group creation
 - **Naming**: Consistent naming conventions per Azure limits
 - **Tagging**: Default tags for cost allocation and governance
@@ -443,6 +481,7 @@ Foundation module providing:
 ### Networking (`infra/networking/`)
 
 Network infrastructure:
+
 - **VNet**: Virtual networks with subnet segmentation
 - **NSG**: Network security groups with tier-based rules
 - **Service Endpoints**: Secure access to Azure services
@@ -450,18 +489,21 @@ Network infrastructure:
 ### Security (`infra/security/`)
 
 Security resources:
+
 - **Key Vault**: Secrets management with RBAC
 - **Managed Identity**: Workload identity for passwordless auth
 
 ### Storage (`infra/storage/`)
 
 Storage resources:
+
 - **Storage Account**: Secure blob storage with soft delete
 - **Containers**: Pre-configured blob containers
 
 ### Monitoring (`infra/monitoring/`)
 
 Observability:
+
 - **Log Analytics**: Centralized logging workspace
 - **App Insights**: Application performance monitoring
 
@@ -471,11 +513,11 @@ Observability:
 
 Environment-specific settings are defined in `config/settings.py`:
 
-| Environment | VNet CIDR | Purge Protection | Log Retention |
-|-------------|-----------|------------------|---------------|
-| dev | 10.0.0.0/16 | Disabled | 30 days |
-| staging | 10.1.0.0/16 | Disabled | 60 days |
-| prod | 10.2.0.0/16 | Enabled | 365 days |
+| Environment | VNet CIDR   | Purge Protection | Log Retention |
+| ----------- | ----------- | ---------------- | ------------- |
+| dev         | 10.0.0.0/16 | Disabled         | 30 days       |
+| staging     | 10.1.0.0/16 | Disabled         | 60 days       |
+| prod        | 10.2.0.0/16 | Enabled          | 365 days      |
 
 ### Stack Configuration
 
@@ -492,14 +534,14 @@ config:
 
 This project includes Pulumi CrossGuard policies for compliance:
 
-| Policy | Description | Enforcement |
-|--------|-------------|-------------|
-| `storage-https-only` | Storage accounts must use HTTPS | Mandatory |
-| `storage-tls-version` | Minimum TLS 1.2 required | Mandatory |
-| `storage-no-public-access` | No public blob access | Mandatory |
-| `keyvault-purge-protection` | Purge protection in prod | Mandatory |
-| `required-tags` | Required tags present | Mandatory |
-| `nsg-no-open-to-internet` | No open inbound rules | Mandatory |
+| Policy                      | Description                     | Enforcement |
+| --------------------------- | ------------------------------- | ----------- |
+| `storage-https-only`        | Storage accounts must use HTTPS | Mandatory   |
+| `storage-tls-version`       | Minimum TLS 1.2 required        | Mandatory   |
+| `storage-no-public-access`  | No public blob access           | Mandatory   |
+| `keyvault-purge-protection` | Purge protection in prod        | Mandatory   |
+| `required-tags`             | Required tags present           | Mandatory   |
+| `nsg-no-open-to-internet`   | No open inbound rules           | Mandatory   |
 
 ### Running with Policies
 
@@ -658,12 +700,12 @@ jobs:
 
 #### Required GitHub Secrets
 
-| Secret | Description |
-|--------|-------------|
-| `ARM_CLIENT_ID` | Service Principal Application ID |
-| `ARM_CLIENT_SECRET` | Service Principal Password |
-| `ARM_TENANT_ID` | Azure AD Tenant ID |
-| `ARM_SUBSCRIPTION_ID` | Azure Subscription ID |
+| Secret                | Description                      |
+| --------------------- | -------------------------------- |
+| `ARM_CLIENT_ID`       | Service Principal Application ID |
+| `ARM_CLIENT_SECRET`   | Service Principal Password       |
+| `ARM_TENANT_ID`       | Azure AD Tenant ID               |
+| `ARM_SUBSCRIPTION_ID` | Azure Subscription ID            |
 
 > **Note**: The Service Principal needs `Storage Blob Data Contributor` role on the `pulumistateonelasha` storage account.
 
@@ -738,13 +780,13 @@ pulumi up
 
 To avoid network conflicts, use unique CIDR ranges per environment:
 
-| Environment | VNet CIDR | Purpose |
-|-------------|-----------|---------|
-| dev | 10.0.0.0/16 | Development |
-| staging | 10.1.0.0/16 | Pre-production testing |
-| prod | 10.2.0.0/16 | Production |
-| uat | 10.3.0.0/16 | User acceptance testing |
-| qa | 10.4.0.0/16 | Quality assurance |
+| Environment | VNet CIDR   | Purpose                 |
+| ----------- | ----------- | ----------------------- |
+| dev         | 10.0.0.0/16 | Development             |
+| staging     | 10.1.0.0/16 | Pre-production testing  |
+| prod        | 10.2.0.0/16 | Production              |
+| uat         | 10.3.0.0/16 | User acceptance testing |
+| qa          | 10.4.0.0/16 | Quality assurance       |
 
 ### Switching Between Environments
 
@@ -763,14 +805,14 @@ pulumi stack
 
 Resources follow Azure naming best practices:
 
-| Resource | Format | Example |
-|----------|--------|---------|
-| Resource Group | `rg-{name}-{env}` | `rg-app-dev` |
-| Storage Account | `st{name}{env}` | `stappdev` |
-| Key Vault | `kv-{name}-{env}` | `kv-main-prod` |
-| VNet | `vnet-{name}-{env}` | `vnet-main-dev` |
-| Subnet | `snet-{name}-{env}` | `snet-app-dev` |
-| NSG | `nsg-{name}-{env}` | `nsg-web-dev` |
+| Resource        | Format              | Example         |
+| --------------- | ------------------- | --------------- |
+| Resource Group  | `rg-{name}-{env}`   | `rg-app-dev`    |
+| Storage Account | `st{name}{env}`     | `stappdev`      |
+| Key Vault       | `kv-{name}-{env}`   | `kv-main-prod`  |
+| VNet            | `vnet-{name}-{env}` | `vnet-main-dev` |
+| Subnet          | `snet-{name}-{env}` | `snet-app-dev`  |
+| NSG             | `nsg-{name}-{env}`  | `nsg-web-dev`   |
 
 See `infra/core/naming.py` for implementation details.
 
@@ -778,42 +820,42 @@ See `infra/core/naming.py` for implementation details.
 
 All resources are tagged with:
 
-| Tag | Description | Example |
-|-----|-------------|---------|
-| `Environment` | Deployment environment | `dev`, `prod` |
-| `ManagedBy` | Automation tool | `Pulumi` |
-| `Project` | Pulumi project name | `AzureInfra` |
-| `Stack` | Pulumi stack name | `dev` |
-| `CreatedDate` | Resource creation date | `2025-01-22` |
-| `Component` | Logical component | `networking` |
-| `Owner` | Team/individual owner | `Platform Team` |
-| `CostCenter` | Cost allocation | `IT-001` |
+| Tag           | Description            | Example         |
+| ------------- | ---------------------- | --------------- |
+| `Environment` | Deployment environment | `dev`, `prod`   |
+| `ManagedBy`   | Automation tool        | `Pulumi`        |
+| `Project`     | Pulumi project name    | `AzureInfra`    |
+| `Stack`       | Pulumi stack name      | `dev`           |
+| `CreatedDate` | Resource creation date | `2025-01-22`    |
+| `Component`   | Logical component      | `networking`    |
+| `Owner`       | Team/individual owner  | `Platform Team` |
+| `CostCenter`  | Cost allocation        | `IT-001`        |
 
 ## Glossary
 
 Key terms used in this project:
 
-| Term | Definition |
-|------|------------|
-| **Stack** | A Pulumi stack is an isolated, independently configurable instance of a Pulumi program. Each environment (dev, staging, prod) is a separate stack. Stacks allow you to deploy the same infrastructure code with different configurations. |
-| **State** | Pulumi state is a snapshot of your infrastructure. It tracks which resources exist, their properties, and dependencies. State is stored in a backend (Azure Blob Storage for this project). |
-| **Backend** | Where Pulumi stores state files. Options include Pulumi Cloud, Azure Blob Storage, AWS S3, or local filesystem. This project uses Azure Blob Storage (`azblob://pulumi-state`). |
-| **Preview** | A dry-run that shows what changes Pulumi would make without actually making them. Always run `pulumi preview` before `pulumi up`. |
-| **Up** | The command (`pulumi up`) that provisions or updates infrastructure to match your code. |
-| **Destroy** | The command (`pulumi destroy`) that tears down all resources in a stack. Use with caution. |
-| **ComponentResource** | A Pulumi abstraction that groups related resources together. This project uses components like `VNetComponent`, `StorageAccountComponent`, etc. |
-| **Resource Group** | An Azure container that holds related resources. Resources in a group share the same lifecycle and permissions. |
-| **CrossGuard** | Pulumi's policy-as-code framework. Policies in `policies/` enforce security and compliance rules. |
-| **Provider** | A Pulumi plugin that knows how to create and manage resources for a specific cloud (e.g., `azure-native` for Azure). |
-| **Config** | Stack-specific settings stored in `Pulumi.<stack>.yaml`. Access via `pulumi config set/get`. Secrets are encrypted. |
-| **Outputs** | Values exported from a Pulumi program (e.g., resource IDs, connection strings). View with `pulumi stack output`. |
-| **CIDR** | Classless Inter-Domain Routing. A notation for IP address ranges (e.g., `10.0.0.0/16` = 65,536 addresses). |
-| **NSG** | Network Security Group. Azure firewall rules that filter network traffic to/from resources. |
-| **VNet** | Virtual Network. An isolated network in Azure where you deploy resources. |
-| **Managed Identity** | An Azure identity for services to authenticate without storing credentials. Preferred over service principals for Azure-to-Azure auth. |
-| **Key Vault** | Azure service for securely storing secrets, keys, and certificates. |
-| **RBAC** | Role-Based Access Control. Azure's authorization system using roles like Contributor, Reader, Owner. |
-| **IaC** | Infrastructure as Code. Managing infrastructure through code (like this Pulumi project) rather than manual configuration. |
+| Term                  | Definition                                                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stack**             | A Pulumi stack is an isolated, independently configurable instance of a Pulumi program. Each environment (dev, staging, prod) is a separate stack. Stacks allow you to deploy the same infrastructure code with different configurations. |
+| **State**             | Pulumi state is a snapshot of your infrastructure. It tracks which resources exist, their properties, and dependencies. State is stored in a backend (Azure Blob Storage for this project).                                               |
+| **Backend**           | Where Pulumi stores state files. Options include Pulumi Cloud, Azure Blob Storage, AWS S3, or local filesystem. This project uses Azure Blob Storage (`azblob://pulumi-state`).                                                           |
+| **Preview**           | A dry-run that shows what changes Pulumi would make without actually making them. Always run `pulumi preview` before `pulumi up`.                                                                                                         |
+| **Up**                | The command (`pulumi up`) that provisions or updates infrastructure to match your code.                                                                                                                                                   |
+| **Destroy**           | The command (`pulumi destroy`) that tears down all resources in a stack. Use with caution.                                                                                                                                                |
+| **ComponentResource** | A Pulumi abstraction that groups related resources together. This project uses components like `VNetComponent`, `StorageAccountComponent`, etc.                                                                                           |
+| **Resource Group**    | An Azure container that holds related resources. Resources in a group share the same lifecycle and permissions.                                                                                                                           |
+| **CrossGuard**        | Pulumi's policy-as-code framework. Policies in `policies/` enforce security and compliance rules.                                                                                                                                         |
+| **Provider**          | A Pulumi plugin that knows how to create and manage resources for a specific cloud (e.g., `azure-native` for Azure).                                                                                                                      |
+| **Config**            | Stack-specific settings stored in `Pulumi.<stack>.yaml`. Access via `pulumi config set/get`. Secrets are encrypted.                                                                                                                       |
+| **Outputs**           | Values exported from a Pulumi program (e.g., resource IDs, connection strings). View with `pulumi stack output`.                                                                                                                          |
+| **CIDR**              | Classless Inter-Domain Routing. A notation for IP address ranges (e.g., `10.0.0.0/16` = 65,536 addresses).                                                                                                                                |
+| **NSG**               | Network Security Group. Azure firewall rules that filter network traffic to/from resources.                                                                                                                                               |
+| **VNet**              | Virtual Network. An isolated network in Azure where you deploy resources.                                                                                                                                                                 |
+| **Managed Identity**  | An Azure identity for services to authenticate without storing credentials. Preferred over service principals for Azure-to-Azure auth.                                                                                                    |
+| **Key Vault**         | Azure service for securely storing secrets, keys, and certificates.                                                                                                                                                                       |
+| **RBAC**              | Role-Based Access Control. Azure's authorization system using roles like Contributor, Reader, Owner.                                                                                                                                      |
+| **IaC**               | Infrastructure as Code. Managing infrastructure through code (like this Pulumi project) rather than manual configuration.                                                                                                                 |
 
 ## Changelog
 
