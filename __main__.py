@@ -3,6 +3,16 @@ Azure Infrastructure as Code with Pulumi.
 
 This is the main entry point for the Pulumi program.
 It orchestrates the deployment of all infrastructure components.
+
+Architecture:
+- Frontend: Static Web Apps (React), CDN (multi-geo)
+- Gateway: API Management (public, auth: basic + API key)
+- Microservices: Container Apps (private)
+- Messaging: Service Bus (queues, topics)
+- Functions: Azure Functions (private workers)
+- ETL: Python services
+- Database: Azure SQL (T-SQL)
+- Observability: Log Analytics, App Insights
 """
 
 # Load environment variables from .env file (must be before other imports)
@@ -13,11 +23,6 @@ import pulumi
 from pulumi_azure_native import authorization
 
 from config import get_environment_settings
-from infra.core import CoreStack
-from infra.networking import NetworkingStack
-from infra.security import SecurityStack
-from infra.storage import StorageStack
-from infra.monitoring import MonitoringStack
 
 
 def main() -> None:
@@ -38,58 +43,25 @@ def main() -> None:
     pulumi.log.info(f"Location: {settings.location}")
 
     # =========================================================================
-    # Core Infrastructure (Resource Groups)
+    # TODO: Implement infrastructure in this order (see docs/ARCHITECTURE.md)
     # =========================================================================
-    core = CoreStack(environment=environment)
-
-    # =========================================================================
-    # Networking Infrastructure
-    # =========================================================================
-    networking = NetworkingStack(
-        environment=environment,
-        resource_group_name=core.network_rg.name,
-        address_space=settings.network.vnet_address_space,
-    )
-
-    # =========================================================================
-    # Security Infrastructure (Key Vault, Managed Identities)
-    # =========================================================================
-    security = SecurityStack(
-        environment=environment,
-        resource_group_name=core.security_rg.name,
-        tenant_id=client_config.tenant_id,
-    )
-
-    # =========================================================================
-    # Storage Infrastructure
-    # =========================================================================
-    storage = StorageStack(
-        environment=environment,
-        resource_group_name=core.data_rg.name,
-    )
-
-    # =========================================================================
-    # Monitoring Infrastructure (Log Analytics, App Insights)
-    # =========================================================================
-    monitoring = MonitoringStack(
-        environment=environment,
-        resource_group_name=core.monitoring_rg.name,
-    )
-
-    # =========================================================================
-    # Export Outputs
+    #
+    # 1. Core (Resource Groups)
+    # 2. Networking (VNet, Subnets, NSGs, Private Endpoints)
+    # 3. Security (Key Vault, Managed Identities)
+    # 4. Observability (Log Analytics, App Insights)
+    # 5. Database (Azure SQL)
+    # 6. Messaging (Service Bus)
+    # 7. Functions (Azure Functions - workers)
+    # 8. Microservices (Container Apps)
+    # 9. Gateway (API Management)
+    # 10. Frontend (Static Web Apps, CDN)
+    #
     # =========================================================================
 
     # Export environment info
     pulumi.export("environment", environment)
     pulumi.export("location", settings.location)
-
-    # Export from each stack
-    core.export_outputs()
-    networking.export_outputs()
-    security.export_outputs()
-    storage.export_outputs()
-    monitoring.export_outputs()
 
 
 # Run the main function
