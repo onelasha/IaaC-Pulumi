@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Architecture plan document (`docs/ARCHITECTURE.md`)
+- New infrastructure modules for event-driven architecture:
+  - `frontend/` - Static Web Apps, CDN, DNS
+  - `gateway/` - API Management
+  - `microservices/` - Container Apps
+  - `messaging/` - Service Bus (queues, topics)
+  - `functions/` - Azure Functions (workers)
+  - `etl/` - ETL storage, Data Factory
+  - `observability/` - Log Analytics, App Insights, alerts
+- Updated `database/` module for Azure SQL (T-SQL)
 - `.env` file support with `python-dotenv` for managing environment variables
 - `.env.example` template with all common configuration variables
 - "Bootstrap Infrastructure" section documenting manual one-time setup

@@ -1,11 +1,13 @@
-"""
-Database Infrastructure Module.
+"""Database infrastructure module.
 
-Contains SQL Server, PostgreSQL, Cosmos DB, and related database components.
-Add components as needed for your data tier.
+Components:
+- Azure SQL Server
+- SQL Database (T-SQL)
+- Firewall rules
+- Private endpoints
 """
 
-# Future components:
-# from .sql_server import SQLServerComponent
-# from .postgresql import PostgreSQLComponent
-# from .cosmos_db import CosmosDBComponent
+# TODO: Implement components
+# from .sql_server import SqlServerComponent
+# from .sql_database import SqlDatabaseComponent
+# from .firewall import SqlFirewallRules
