@@ -2,7 +2,7 @@
 
 from typing import Optional
 import pulumi
-from pulumi_azure_native import insights
+from pulumi_azure_native import applicationinsights
 
 from ..core.tags import get_default_tags
 from ..core.naming import generate_resource_name
@@ -58,15 +58,14 @@ class AppInsightsComponent(pulumi.ComponentResource):
         if extra_tags:
             tags.update(extra_tags)
 
-        self.app_insights = insights.Component(
+        self.app_insights = applicationinsights.Component(
             appi_name,
-            resource_name=appi_name,
             resource_group_name=resource_group_name,
             location=self.location,
             kind=application_type,
-            application_type=insights.ApplicationType.WEB
+            application_type=applicationinsights.ApplicationType.WEB
             if application_type == "web"
-            else insights.ApplicationType.OTHER,
+            else applicationinsights.ApplicationType.OTHER,
             workspace_resource_id=workspace_id,
             disable_ip_masking=False,  # Mask IPs for privacy
             disable_local_auth=True,  # Require AAD auth
