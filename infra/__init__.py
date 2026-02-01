@@ -18,35 +18,9 @@ Architecture:
 - observability: Log Analytics, App Insights, alerts
 """
 
-# Core components (implemented)
-from .core import CoreStack
+# TODO: Import infrastructure stacks as they are implemented
+# from .core import CoreStack
+# from .networking import NetworkingStack
+# from .security import SecurityStack
 
-# Networking components (implemented)
-from .networking import NetworkingStack
-
-# Security components (implemented)
-from .security import SecurityStack
-
-# TODO: Implement remaining stacks
-# from .frontend import FrontendStack
-# from .gateway import GatewayStack
-# from .microservices import MicroservicesStack
-# from .messaging import MessagingStack
-# from .functions import FunctionsStack
-# from .etl import EtlStack
-# from .database import DatabaseStack
-# from .observability import ObservabilityStack
-
-__all__ = [
-    "CoreStack",
-    "NetworkingStack",
-    "SecurityStack",
-    # "FrontendStack",
-    # "GatewayStack",
-    # "MicroservicesStack",
-    # "MessagingStack",
-    # "FunctionsStack",
-    # "EtlStack",
-    # "DatabaseStack",
-    # "ObservabilityStack",
-]
+__all__: list[str] = []

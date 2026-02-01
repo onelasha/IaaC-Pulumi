@@ -1,0 +1,6 @@
+# encryptionsalt will be generated when you run: pulumi stack init qa
+config:
+  azure-native:location: westus2
+  AzureInfra:owner: Crossroads Platform Team
+  AzureInfra:costCenter: IT-002
+encryptionsalt: v1:cQRBWKEZTgI=:v1:N4kKl8Qt+FuReH3A:zf3hd/CJqdvoZd55VFtm7HRgcBAv4A==

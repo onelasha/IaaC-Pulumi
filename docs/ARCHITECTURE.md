@@ -89,24 +89,25 @@ A serverless, event-driven Azure architecture with public API gateway, private m
 
 ### 1. Frontend Layer (Public)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Static Web App | Azure Static Web Apps | React SPA hosting |
-| CDN | Azure CDN / Front Door | Multi-geo content delivery |
-| Custom Domain | Azure DNS | Domain management |
+| Component      | Azure Service          | Purpose                    |
+| -------------- | ---------------------- | -------------------------- |
+| Static Web App | Azure Static Web Apps  | React SPA hosting          |
+| CDN            | Azure CDN / Front Door | Multi-geo content delivery |
+| Custom Domain  | Azure DNS              | Domain management          |
 
 **Regions**: West US, West Europe (expandable)
 
 ### 2. API Gateway Layer (Public)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| API Gateway | Azure API Management | Centralized API entry point |
-| Authentication | APIM Policies | Basic auth + API key validation |
-| Rate Limiting | APIM Policies | Throttling and quotas |
-| Caching | APIM Cache | Response caching |
+| Component      | Azure Service        | Purpose                         |
+| -------------- | -------------------- | ------------------------------- |
+| API Gateway    | Azure API Management | Centralized API entry point     |
+| Authentication | APIM Policies        | Basic auth + API key validation |
+| Rate Limiting  | APIM Policies        | Throttling and quotas           |
+| Caching        | APIM Cache           | Response caching                |
 
 **Security**:
+
 - Basic Authentication (username/password)
 - API Key (subscription key)
 - IP filtering (optional)
@@ -114,13 +115,14 @@ A serverless, event-driven Azure architecture with public API gateway, private m
 
 ### 3. Microservices Layer (Private)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Microservices | Azure Container Apps | Business logic services |
+| Component         | Azure Service              | Purpose                  |
+| ----------------- | -------------------------- | ------------------------ |
+| Microservices     | Azure Container Apps       | Business logic services  |
 | Service Discovery | Container Apps Environment | Internal service routing |
-| Scaling | KEDA | Event-driven autoscaling |
+| Scaling           | KEDA                       | Event-driven autoscaling |
 
 **Services** (examples):
+
 - `users-api` - User management
 - `orders-api` - Order processing
 - `products-api` - Product catalog
@@ -128,14 +130,15 @@ A serverless, event-driven Azure architecture with public API gateway, private m
 
 ### 4. Messaging Layer (Private)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Message Broker | Azure Service Bus | Async messaging |
-| Queues | Service Bus Queues | Point-to-point messaging |
-| Topics | Service Bus Topics | Pub/sub messaging |
-| Dead Letter | DLQ | Failed message handling |
+| Component      | Azure Service      | Purpose                  |
+| -------------- | ------------------ | ------------------------ |
+| Message Broker | Azure Service Bus  | Async messaging          |
+| Queues         | Service Bus Queues | Point-to-point messaging |
+| Topics         | Service Bus Topics | Pub/sub messaging        |
+| Dead Letter    | DLQ                | Failed message handling  |
 
 **Queues/Topics**:
+
 - `orders-queue` - Order processing
 - `events-topic` - Domain events
 - `etl-queue` - ETL job triggers
@@ -144,14 +147,15 @@ A serverless, event-driven Azure architecture with public API gateway, private m
 
 ### 5. Functions Layer (Private Workers)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Queue Workers | Azure Functions | Process queue messages |
-| Topic Subscribers | Azure Functions | React to events |
-| ETL Processors | Azure Functions | Data transformation |
-| Third-party Sync | Azure Functions | External API integration |
+| Component         | Azure Service   | Purpose                  |
+| ----------------- | --------------- | ------------------------ |
+| Queue Workers     | Azure Functions | Process queue messages   |
+| Topic Subscribers | Azure Functions | React to events          |
+| ETL Processors    | Azure Functions | Data transformation      |
+| Third-party Sync  | Azure Functions | External API integration |
 
 **Triggers**:
+
 - Service Bus Queue trigger
 - Service Bus Topic trigger
 - Timer trigger (scheduled ETL)
@@ -159,63 +163,63 @@ A serverless, event-driven Azure architecture with public API gateway, private m
 
 ### 6. ETL Layer (Private)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| ETL Orchestration | Azure Functions (Python) | Data pipeline logic |
-| Staging Storage | Blob Storage | Intermediate data storage |
-| Data Factory | Azure Data Factory | Complex ETL workflows (optional) |
+| Component         | Azure Service            | Purpose                          |
+| ----------------- | ------------------------ | -------------------------------- |
+| ETL Orchestration | Azure Functions (Python) | Data pipeline logic              |
+| Staging Storage   | Blob Storage             | Intermediate data storage        |
+| Data Factory      | Azure Data Factory       | Complex ETL workflows (optional) |
 
 ### 7. Database Layer (Private)
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
+| Component        | Azure Service      | Purpose                    |
+| ---------------- | ------------------ | -------------------------- |
 | Primary Database | Azure SQL Database | Transactional data (T-SQL) |
-| Connection | Private Endpoint | Secure database access |
-| Backup | Azure SQL Backup | Point-in-time recovery |
+| Connection       | Private Endpoint   | Secure database access     |
+| Backup           | Azure SQL Backup   | Point-in-time recovery     |
 
 ### 8. Security Layer
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Secrets | Azure Key Vault | API keys, connection strings |
-| Identity | Managed Identity | Passwordless Azure auth |
-| Network | Private Endpoints | No public database/service bus |
-| WAF | Azure Front Door WAF | Web application firewall |
+| Component | Azure Service        | Purpose                        |
+| --------- | -------------------- | ------------------------------ |
+| Secrets   | Azure Key Vault      | API keys, connection strings   |
+| Identity  | Managed Identity     | Passwordless Azure auth        |
+| Network   | Private Endpoints    | No public database/service bus |
+| WAF       | Azure Front Door WAF | Web application firewall       |
 
 ### 9. Observability Layer
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Logs | Log Analytics Workspace | Centralized logging |
-| APM | Application Insights | Performance monitoring, traces |
-| Metrics | Azure Monitor | Infrastructure metrics |
-| Alerts | Azure Monitor Alerts | Proactive notifications |
-| Dashboards | Azure Workbooks | Visualization |
+| Component  | Azure Service           | Purpose                        |
+| ---------- | ----------------------- | ------------------------------ |
+| Logs       | Log Analytics Workspace | Centralized logging            |
+| APM        | Application Insights    | Performance monitoring, traces |
+| Metrics    | Azure Monitor           | Infrastructure metrics         |
+| Alerts     | Azure Monitor Alerts    | Proactive notifications        |
+| Dashboards | Azure Workbooks         | Visualization                  |
 
 ## Network Architecture
 
 ### Subnets
 
-| Subnet | CIDR | Purpose |
-|--------|------|---------|
-| gateway | /24 | API Management (if VNet integrated) |
-| app | /24 | Container Apps |
-| functions | /24 | Azure Functions |
-| integration | /24 | Service Bus Private Endpoints |
-| data | /24 | SQL + Storage Private Endpoints |
-| management | /24 | Bastion, Jump boxes (optional) |
+| Subnet      | CIDR | Purpose                             |
+| ----------- | ---- | ----------------------------------- |
+| gateway     | /24  | API Management (if VNet integrated) |
+| app         | /24  | Container Apps                      |
+| functions   | /24  | Azure Functions                     |
+| integration | /24  | Service Bus Private Endpoints       |
+| data        | /24  | SQL + Storage Private Endpoints     |
+| management  | /24  | Bastion, Jump boxes (optional)      |
 
 ### Access Control
 
-| From | To | Access |
-|------|-----|--------|
-| Internet | Static Web App | Public (CDN) |
-| Internet | API Management | Public (with auth) |
-| API Management | Microservices | Private (VNet) |
-| Microservices | Service Bus | Private Endpoint |
-| Microservices | SQL Database | Private Endpoint |
-| Functions | Service Bus | Private Endpoint |
-| Functions | Third-party APIs | Outbound (NAT Gateway) |
+| From           | To               | Access                 |
+| -------------- | ---------------- | ---------------------- |
+| Internet       | Static Web App   | Public (CDN)           |
+| Internet       | API Management   | Public (with auth)     |
+| API Management | Microservices    | Private (VNet)         |
+| Microservices  | Service Bus      | Private Endpoint       |
+| Microservices  | SQL Database     | Private Endpoint       |
+| Functions      | Service Bus      | Private Endpoint       |
+| Functions      | Third-party APIs | Outbound (NAT Gateway) |
 
 ## Folder Structure
 
@@ -315,21 +319,105 @@ Dependencies require this deployment sequence:
 
 ## Environment Strategy
 
-| Environment | Purpose | Regions |
-|-------------|---------|---------|
-| dev | Development & testing | West US only |
-| staging | Pre-production | West US only |
-| prod | Production | West US + West Europe |
+| Environment | Purpose               | Regions                          |
+| ----------- | --------------------- | -------------------------------- |
+| dev         | Development & testing | West US 2                        |
+| qa          | Quality assurance     | West US 2                        |
+| staging     | Pre-production        | West US 2                        |
+| prod        | Production            | West US 2 (+ West Europe future) |
+
+## Environment Management
+
+### Configuration Layers
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           CONFIGURATION LAYERS                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  .env                          SECRETS (same for all environments)  │   │
+│  │  ├── PULUMI_CONFIG_PASSPHRASE  Encryption passphrase                │   │
+│  │  ├── AZURE_STORAGE_ACCOUNT     State backend (pulumistateonelasha)  │   │
+│  │  └── ARM_*                     Service principal (CI/CD)            │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Pulumi.<stack>.yaml           STACK CONFIG (per environment)       │   │
+│  │  ├── Pulumi.dev.yaml           encryptionsalt, location, owner      │   │
+│  │  ├── Pulumi.qa.yaml            encryptionsalt, location, owner      │   │
+│  │  ├── Pulumi.staging.yaml       encryptionsalt, location, owner      │   │
+│  │  └── Pulumi.prod.yaml          encryptionsalt, location, owner      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  config/settings.py            INFRA SETTINGS (per environment)     │   │
+│  │  ├── Network CIDR ranges       dev: 10.0.x, qa: 10.3.x, etc.        │   │
+│  │  ├── Security settings         purge protection, private endpoints  │   │
+│  │  └── Monitoring settings       retention days, quotas               │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Network Isolation by Environment
+
+| Environment | VNet CIDR   | Purpose                        |
+| ----------- | ----------- | ------------------------------ |
+| dev         | 10.0.0.0/16 | Development - relaxed security |
+| qa          | 10.3.0.0/16 | QA testing - mirrors staging   |
+| staging     | 10.1.0.0/16 | Pre-prod - mirrors production  |
+| prod        | 10.2.0.0/16 | Production - full security     |
+
+### Environment-Specific Settings
+
+| Setting              | Dev | QA  | Staging | Prod      |
+| -------------------- | --- | --- | ------- | --------- |
+| DDoS Protection      | ❌  | ❌  | ❌      | ✅        |
+| Firewall             | ❌  | ❌  | ❌      | ✅        |
+| Private Endpoints    | ❌  | ❌  | ✅      | ✅        |
+| Purge Protection     | ❌  | ❌  | ❌      | ✅        |
+| Soft Delete (days)   | 7   | 14  | 30      | 90        |
+| Log Retention (days) | 30  | 30  | 60      | 365       |
+| Daily Quota (GB)     | 1   | 2   | 5       | Unlimited |
+
+### Deployment Commands
+
+```bash
+# Select and deploy to specific environment
+pulumi stack select dev && pulumi up
+pulumi stack select qa && pulumi up
+pulumi stack select staging && pulumi up
+pulumi stack select prod && pulumi up
+
+# Or use --stack flag
+pulumi up --stack dev
+pulumi up --stack qa
+pulumi up --stack staging
+pulumi up --stack prod
+```
+
+### State Management
+
+All environments share a single Azure Storage backend:
+
+- **Storage Account**: `pulumistateonelasha`
+- **Resource Group**: `rg-infra`
+- **Location**: West US 2
+
+Each stack maintains its own state file within the storage account.
 
 ## Cost Optimization
 
-| Component | Dev/Staging | Production |
-|-----------|-------------|------------|
-| API Management | Developer tier | Standard tier |
-| Container Apps | Consumption | Consumption (scaled) |
-| Functions | Consumption | Premium (VNet) |
-| SQL Database | Basic | Standard S2+ |
-| Service Bus | Basic | Standard |
+| Component      | Dev/Staging    | Production           |
+| -------------- | -------------- | -------------------- |
+| API Management | Developer tier | Standard tier        |
+| Container Apps | Consumption    | Consumption (scaled) |
+| Functions      | Consumption    | Premium (VNet)       |
+| SQL Database   | Basic          | Standard S2+         |
+| Service Bus    | Basic          | Standard             |
 
 ## Next Steps
 

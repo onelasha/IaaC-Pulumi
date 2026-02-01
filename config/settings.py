@@ -73,6 +73,31 @@ ENVIRONMENT_CONFIGS = {
             daily_quota_gb=1.0,
         ),
     ),
+    "qa": EnvironmentSettings(
+        name="qa",
+        location="westus2",
+        network=NetworkSettings(
+            vnet_address_space=["10.3.0.0/16"],
+            subnet_prefixes={
+                "gateway": "10.3.0.0/24",
+                "web": "10.3.1.0/24",
+                "app": "10.3.2.0/24",
+                "data": "10.3.3.0/24",
+                "management": "10.3.4.0/24",
+            },
+            enable_ddos_protection=False,
+            enable_firewall=False,
+        ),
+        security=SecuritySettings(
+            enable_purge_protection=False,
+            soft_delete_retention_days=14,
+            enable_private_endpoints=False,
+        ),
+        monitoring=MonitoringSettings(
+            log_retention_days=30,
+            daily_quota_gb=2.0,
+        ),
+    ),
     "staging": EnvironmentSettings(
         name="staging",
         location="westus2",
