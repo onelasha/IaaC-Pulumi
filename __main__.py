@@ -15,18 +15,17 @@ Architecture:
 - Observability: Log Analytics, App Insights
 """
 
-# Load environment variables from .env file (must be before other imports)
-from dotenv import load_dotenv
-load_dotenv()
-
 import pulumi
 from pulumi_azure_native import authorization
 
-from config import get_environment_settings
+from config import get_environment_settings, get_secrets
 
 
 def main() -> None:
     """Deploy Azure infrastructure."""
+
+    # Load secrets from .env (Pydantic auto-loads)
+    secrets = get_secrets()
 
     # Get environment from stack name
     stack_name = pulumi.get_stack()
@@ -35,12 +34,12 @@ def main() -> None:
     # Load environment-specific settings
     settings = get_environment_settings(environment)
 
-    # Get Azure configuration
-    azure_config = pulumi.Config("azure-native")
+    # Get Azure client config
     client_config = authorization.get_client_config()
 
     pulumi.log.info(f"Deploying to environment: {environment}")
     pulumi.log.info(f"Location: {settings.location}")
+    pulumi.log.info(f"State backend: {secrets.azure_storage_account}")
 
     # =========================================================================
     # Infrastructure deployment (see docs/ARCHITECTURE.md)
