@@ -383,6 +383,39 @@ Dependencies require this deployment sequence:
 | Log Retention (days) | 30  | 30  | 60      | 365       |
 | Daily Quota (GB)     | 1   | 2   | 5       | Unlimited |
 
+### Feature Flags
+
+Feature flags in `config/settings.py` control which resources are deployed per environment. This enables:
+
+- **Dev** to have experimental resources for testing
+- **QA** to be minimal and cost-effective
+- **Staging/Prod** to have production-ready resources
+
+| Feature        | Dev | QA  | Staging | Prod | Purpose             |
+| -------------- | --- | --- | ------- | ---- | ------------------- |
+| Container Apps | ✅  | ✅  | ✅      | ✅   | Microservices       |
+| Functions      | ✅  | ✅  | ✅      | ✅   | Serverless workers  |
+| Service Bus    | ✅  | ✅  | ✅      | ✅   | Messaging           |
+| SQL Database   | ✅  | ✅  | ✅      | ✅   | Primary database    |
+| API Management | ✅  | ❌  | ✅      | ✅   | API gateway         |
+| CDN            | ❌  | ❌  | ✅      | ✅   | Content delivery    |
+| Data Factory   | ✅  | ❌  | ❌      | ❌   | ETL (dev testing)   |
+| Redis Cache    | ✅  | ❌  | ❌      | ✅   | Caching             |
+| Cosmos DB      | ✅  | ❌  | ❌      | ❌   | NoSQL (dev testing) |
+
+Usage in `__main__.py`:
+
+```python
+settings = get_environment_settings(environment)
+
+# Conditional resource deployment
+if settings.features.enable_sql_database:
+    database = create_database(settings, resource_group)
+
+if settings.features.enable_cosmos_db:  # Only in dev!
+    cosmos = create_cosmos(settings, resource_group)
+```
+
 ### Deployment Commands
 
 ```bash
@@ -421,10 +454,14 @@ Each stack maintains its own state file within the storage account.
 
 ## Next Steps
 
-1. [ ] Review and approve this architecture
-2. [ ] Restructure folder layout
-3. [ ] Implement core module (naming, tags, resource groups)
-4. [ ] Implement networking module
-5. [ ] Implement remaining modules in dependency order
-6. [ ] Add security policies (CrossGuard)
-7. [ ] Create deployment scripts per environment
+1. [x] Review and approve this architecture
+2. [x] Set up folder structure
+3. [x] Configure multi-environment support (dev, qa, staging, prod)
+4. [x] Implement feature flags for conditional resource deployment
+5. [ ] Implement core module (naming, tags, resource groups)
+6. [ ] Implement networking module (VNet, subnets, NSGs)
+7. [ ] Implement security module (Key Vault, managed identities)
+8. [ ] Implement observability module (Log Analytics, App Insights)
+9. [ ] Implement remaining modules in dependency order
+10. [ ] Add security policies (CrossGuard)
+11. [ ] Set up CI/CD pipelines
