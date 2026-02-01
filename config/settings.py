@@ -1,12 +1,39 @@
-"""Environment-specific settings and configuration."""
+"""Environment-specific settings and configuration using Pydantic."""
 
-from dataclasses import dataclass, field
-from typing import Optional
+from functools import lru_cache
+
 import pulumi
+from pydantic import BaseModel, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-@dataclass
-class NetworkSettings:
+class AppSecrets(BaseSettings):
+    """Secrets loaded from .env file."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    pulumi_config_passphrase: SecretStr | None = None
+    azure_storage_account: str = "pulumistateonelasha"
+    azure_storage_key: SecretStr | None = None
+    azure_storage_sas_token: SecretStr | None = None
+
+    arm_client_id: str | None = None
+    arm_client_secret: SecretStr | None = None
+    arm_tenant_id: str | None = None
+    arm_subscription_id: str | None = None
+
+
+@lru_cache
+def get_secrets() -> AppSecrets:
+    """Get application secrets (cached singleton)."""
+    return AppSecrets()
+
+
+class NetworkSettings(BaseModel):
     """Network configuration for an environment."""
 
     vnet_address_space: list[str]
@@ -15,27 +42,24 @@ class NetworkSettings:
     enable_firewall: bool = False
 
 
-@dataclass
-class SecuritySettings:
+class SecuritySettings(BaseModel):
     """Security configuration for an environment."""
 
     enable_purge_protection: bool = False
     soft_delete_retention_days: int = 30
     enable_private_endpoints: bool = False
-    allowed_ip_ranges: list[str] = field(default_factory=list)
+    allowed_ip_ranges: list[str] = []
 
 
-@dataclass
-class MonitoringSettings:
+class MonitoringSettings(BaseModel):
     """Monitoring configuration for an environment."""
 
     log_retention_days: int = 30
     enable_diagnostic_settings: bool = True
-    daily_quota_gb: Optional[float] = None
+    daily_quota_gb: float | None = None
 
 
-@dataclass
-class FeatureFlags:
+class FeatureFlags(BaseModel):
     """Feature flags to control which resources are deployed per environment."""
 
     enable_container_apps: bool = True
@@ -49,8 +73,7 @@ class FeatureFlags:
     enable_cosmos_db: bool = False
 
 
-@dataclass
-class EnvironmentSettings:
+class EnvironmentSettings(BaseModel):
     """Complete settings for an environment."""
 
     name: str
@@ -58,8 +81,8 @@ class EnvironmentSettings:
     network: NetworkSettings
     security: SecuritySettings
     monitoring: MonitoringSettings
-    features: FeatureFlags = field(default_factory=FeatureFlags)
-    tags: dict[str, str] = field(default_factory=dict)
+    features: FeatureFlags = FeatureFlags()
+    tags: dict[str, str] = {}
 
 
 # Environment-specific configurations
@@ -211,7 +234,7 @@ ENVIRONMENT_CONFIGS = {
 }
 
 
-def get_environment_settings(environment: Optional[str] = None) -> EnvironmentSettings:
+def get_environment_settings(environment: str | None = None) -> EnvironmentSettings:
     """
     Get settings for the specified environment.
 
