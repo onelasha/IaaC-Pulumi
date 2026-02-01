@@ -743,9 +743,20 @@ jobs:
 
 ## Adding New Environments
 
-This project supports multiple environments (dev, staging, prod, etc.). Each environment is a Pulumi **stack** with its own configuration.
+This project supports multiple environments (dev, qa, staging, prod). Each environment is a Pulumi **stack** with its own configuration.
 
-### Step 1: Add Environment Configuration
+### Current Environments
+
+| Environment | VNet CIDR   | Purpose               |
+| ----------- | ----------- | --------------------- |
+| dev         | 10.0.0.0/16 | Development & testing |
+| qa          | 10.3.0.0/16 | Quality assurance     |
+| staging     | 10.1.0.0/16 | Pre-production        |
+| prod        | 10.2.0.0/16 | Production            |
+
+### Adding a New Environment
+
+#### Step 1: Add Environment Configuration
 
 Edit `config/settings.py` and add your environment to `ENVIRONMENT_CONFIGS`:
 
@@ -754,13 +765,13 @@ Edit `config/settings.py` and add your environment to `ENVIRONMENT_CONFIGS`:
     name="uat",
     location="westus2",
     network=NetworkSettings(
-        vnet_address_space=["10.3.0.0/16"],  # Use unique CIDR range
+        vnet_address_space=["10.4.0.0/16"],  # Use unique CIDR range
         subnet_prefixes={
-            "gateway": "10.3.0.0/24",
-            "web": "10.3.1.0/24",
-            "app": "10.3.2.0/24",
-            "data": "10.3.3.0/24",
-            "management": "10.3.4.0/24",
+            "gateway": "10.4.0.0/24",
+            "web": "10.4.1.0/24",
+            "app": "10.4.2.0/24",
+            "data": "10.4.3.0/24",
+            "management": "10.4.4.0/24",
         },
         enable_ddos_protection=False,
         enable_firewall=False,
@@ -774,51 +785,47 @@ Edit `config/settings.py` and add your environment to `ENVIRONMENT_CONFIGS`:
         log_retention_days=60,
         daily_quota_gb=5.0,
     ),
+    features=FeatureFlags(
+        enable_container_apps=True,
+        enable_functions=True,
+        enable_service_bus=True,
+        enable_sql_database=True,
+        enable_api_management=True,
+        enable_cdn=False,
+        enable_data_factory=False,
+        enable_redis_cache=False,
+        enable_cosmos_db=False,
+    ),
 ),
 ```
 
-### Step 2: Create the Stack
+#### Step 2: Create the Stack
 
 ```bash
 # Create new stack (this only creates metadata, no resources)
 pulumi stack init uat
 ```
 
-### Step 3: Create Stack Configuration File
+This will auto-generate the `encryptionsalt` in `Pulumi.uat.yaml`.
 
-Create `Pulumi.uat.yaml` in the project root:
-
-```yaml
-config:
-  azure-native:location: westus2
-  AzureInfra:owner: Your Team Name
-  AzureInfra:costCenter: IT-XXX
-```
-
-### Step 4: Preview and Deploy
+#### Step 3: Configure Stack Values
 
 ```bash
-# Select the new stack
-pulumi stack select uat
+# Set required config values
+pulumi config set azure-native:location westus2
+pulumi config set AzureInfra:owner "Your Team Name"
+pulumi config set AzureInfra:costCenter "IT-XXX"
+```
 
+#### Step 4: Preview and Deploy
+
+```bash
 # ALWAYS preview first
 pulumi preview
 
 # Deploy after reviewing
 pulumi up
 ```
-
-### Environment CIDR Ranges
-
-To avoid network conflicts, use unique CIDR ranges per environment:
-
-| Environment | VNet CIDR   | Purpose                 |
-| ----------- | ----------- | ----------------------- |
-| dev         | 10.0.0.0/16 | Development             |
-| staging     | 10.1.0.0/16 | Pre-production testing  |
-| prod        | 10.2.0.0/16 | Production              |
-| uat         | 10.3.0.0/16 | User acceptance testing |
-| qa          | 10.4.0.0/16 | Quality assurance       |
 
 ### Switching Between Environments
 
@@ -829,8 +836,11 @@ pulumi stack ls
 # Switch to a different environment
 pulumi stack select prod
 
-# View current stack
-pulumi stack
+# Deploy to specific stack
+pulumi up --stack dev
+pulumi up --stack qa
+pulumi up --stack staging
+pulumi up --stack prod
 ```
 
 ## Naming Conventions
