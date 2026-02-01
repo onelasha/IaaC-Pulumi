@@ -493,7 +493,7 @@ Observability:
 
 ### Configuration Layers
 
-This project uses a three-layer configuration system:
+This project uses a three-layer configuration system with **Pydantic** for type-safe settings:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -501,6 +501,8 @@ This project uses a three-layer configuration system:
 │  ├── PULUMI_CONFIG_PASSPHRASE                                  │
 │  ├── AZURE_STORAGE_ACCOUNT                                     │
 │  └── ARM_* (Service Principal for CI/CD)                       │
+│                                                                 │
+│  Loaded by: config/settings.py → AppSecrets (Pydantic)         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -518,8 +520,35 @@ This project uses a three-layer configuration system:
 │  ├── Security settings (purge protection, private endpoints)   │
 │  ├── Monitoring settings (retention, quotas)                   │
 │  └── Feature flags (which resources to deploy)                 │
+│                                                                 │
+│  Loaded by: EnvironmentSettings, FeatureFlags (Pydantic)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Pydantic Settings
+
+This project uses [Pydantic](https://docs.pydantic.dev/) and [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) for configuration management:
+
+```python
+from config import get_secrets, get_environment_settings
+
+# Secrets from .env (auto-loaded, type-validated)
+secrets = get_secrets()
+print(secrets.azure_storage_account)  # "pulumistateonelasha"
+print(secrets.arm_client_secret)      # SecretStr('**********') - masked!
+
+# Environment settings (type-safe, IDE autocomplete)
+settings = get_environment_settings("dev")
+print(settings.features.enable_cosmos_db)  # True
+print(settings.network.vnet_address_space) # ["10.0.0.0/16"]
+```
+
+**Benefits:**
+
+- **Type validation** - Catches config errors at startup
+- **Auto-loading** - `.env` file loaded automatically
+- **Secret masking** - `SecretStr` hides sensitive values in logs
+- **IDE autocomplete** - Full IntelliSense support
 
 ### Environment Settings
 

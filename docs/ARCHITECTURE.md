@@ -328,11 +328,13 @@ Dependencies require this deployment sequence:
 
 ## Environment Management
 
-### Configuration Layers
+### Configuration Layers (Pydantic)
+
+This project uses **Pydantic** for type-safe configuration management:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           CONFIGURATION LAYERS                               │
+│                     CONFIGURATION LAYERS (Pydantic)                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -340,6 +342,8 @@ Dependencies require this deployment sequence:
 │  │  ├── PULUMI_CONFIG_PASSPHRASE  Encryption passphrase                │   │
 │  │  ├── AZURE_STORAGE_ACCOUNT     State backend (pulumistateonelasha)  │   │
 │  │  └── ARM_*                     Service principal (CI/CD)            │   │
+│  │                                                                     │   │
+│  │  Loaded by: AppSecrets (pydantic-settings) → get_secrets()          │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                    │                                        │
 │                                    ▼                                        │
@@ -354,13 +358,27 @@ Dependencies require this deployment sequence:
 │                                    ▼                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │  config/settings.py            INFRA SETTINGS (per environment)     │   │
-│  │  ├── Network CIDR ranges       dev: 10.0.x, qa: 10.3.x, etc.        │   │
-│  │  ├── Security settings         purge protection, private endpoints  │   │
-│  │  └── Monitoring settings       retention days, quotas               │   │
+│  │  ├── NetworkSettings           VNet CIDR, subnets, DDoS, firewall   │   │
+│  │  ├── SecuritySettings          purge protection, private endpoints  │   │
+│  │  ├── MonitoringSettings        retention days, quotas               │   │
+│  │  └── FeatureFlags              which resources to deploy            │   │
+│  │                                                                     │   │
+│  │  Loaded by: EnvironmentSettings (Pydantic) → get_environment_settings()│
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Pydantic Models:**
+
+| Class                 | Purpose                                            |
+| --------------------- | -------------------------------------------------- |
+| `AppSecrets`          | Loads secrets from `.env` with `SecretStr` masking |
+| `NetworkSettings`     | VNet, subnets, DDoS, firewall config               |
+| `SecuritySettings`    | Key Vault, private endpoints config                |
+| `MonitoringSettings`  | Log retention, quotas                              |
+| `FeatureFlags`        | Controls which resources deploy per environment    |
+| `EnvironmentSettings` | Combines all settings for an environment           |
 
 ### Network Isolation by Environment
 
