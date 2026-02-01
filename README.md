@@ -29,59 +29,40 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 ├── __main__.py              # Main Pulumi program entry point
 ├── Pulumi.yaml              # Pulumi project configuration
 ├── Pulumi.dev.yaml          # Dev environment stack config
+├── Pulumi.qa.yaml           # QA environment stack config
+├── Pulumi.staging.yaml      # Staging environment stack config
+├── Pulumi.prod.yaml         # Production environment stack config
 ├── pyproject.toml           # Python project configuration (uv)
-├── uv.lock                  # Dependency lock file
 │
-├── infra/                   # Infrastructure modules
+├── infra/                   # Infrastructure modules (implement as needed)
 │   ├── __init__.py
 │   ├── core/                # Core resources (resource groups, naming, tags)
-│   │   ├── __init__.py
-│   │   ├── naming.py        # Naming convention utilities
-│   │   ├── resource_group.py
-│   │   ├── stack.py
-│   │   └── tags.py          # Tagging utilities
 │   ├── networking/          # Network resources (VNet, NSG, etc.)
-│   │   ├── __init__.py
-│   │   ├── nsg.py
-│   │   ├── stack.py
-│   │   └── vnet.py
 │   ├── security/            # Security resources (Key Vault, identities)
-│   │   ├── __init__.py
-│   │   ├── keyvault.py
-│   │   ├── managed_identity.py
-│   │   └── stack.py
 │   ├── storage/             # Storage resources
-│   │   ├── __init__.py
-│   │   ├── stack.py
-│   │   └── storage_account.py
 │   ├── monitoring/          # Monitoring resources (Log Analytics, App Insights)
-│   │   ├── __init__.py
-│   │   ├── app_insights.py
-│   │   ├── log_analytics.py
-│   │   └── stack.py
-│   ├── compute/             # Compute resources (VMs, AKS) - extensible
-│   │   └── __init__.py
-│   └── database/            # Database resources - extensible
-│       └── __init__.py
+│   ├── compute/             # Compute resources (VMs, AKS)
+│   ├── database/            # Database resources (SQL, Cosmos DB)
+│   ├── messaging/           # Messaging (Service Bus)
+│   ├── functions/           # Azure Functions
+│   ├── microservices/       # Container Apps
+│   ├── gateway/             # API Management
+│   ├── frontend/            # Static Web Apps, CDN
+│   ├── etl/                 # Data Factory, ETL pipelines
+│   └── observability/       # Advanced monitoring
 │
 ├── config/                  # Environment configurations
 │   ├── __init__.py
-│   └── settings.py          # Environment-specific settings
+│   └── settings.py          # Environment-specific settings + feature flags
 │
 ├── policies/                # Pulumi CrossGuard policies
 │   ├── __init__.py
-│   ├── PulumiPolicy.yaml
-│   └── security_policies.py # Security compliance policies
+│   └── PulumiPolicy.yaml
 │
 ├── tests/                   # Test suite
 │   ├── __init__.py
-│   ├── conftest.py          # Pytest configuration
 │   ├── unit/                # Unit tests
-│   │   ├── __init__.py
-│   │   ├── test_naming.py
-│   │   └── test_tags.py
 │   └── integration/         # Integration tests
-│       └── __init__.py
 │
 ├── scripts/                 # Deployment and utility scripts
 │   ├── deploy.sh            # Deployment script
@@ -89,6 +70,7 @@ A production-ready Pulumi project for provisioning Azure cloud resources using P
 │   └── validate.sh          # Validation script
 │
 └── docs/                    # Additional documentation
+    └── ARCHITECTURE.md      # Detailed architecture documentation
 ```
 
 ## Prerequisites
@@ -509,25 +491,75 @@ Observability:
 
 ## Configuration
 
+### Configuration Layers
+
+This project uses a three-layer configuration system:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  .env                    SECRETS (same for all environments)   │
+│  ├── PULUMI_CONFIG_PASSPHRASE                                  │
+│  ├── AZURE_STORAGE_ACCOUNT                                     │
+│  └── ARM_* (Service Principal for CI/CD)                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Pulumi.<stack>.yaml     STACK CONFIG (per environment)        │
+│  ├── encryptionsalt (auto-generated)                           │
+│  ├── azure-native:location                                     │
+│  └── AzureInfra:owner, AzureInfra:costCenter                   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  config/settings.py      INFRA SETTINGS (per environment)      │
+│  ├── Network CIDR ranges                                       │
+│  ├── Security settings (purge protection, private endpoints)   │
+│  ├── Monitoring settings (retention, quotas)                   │
+│  └── Feature flags (which resources to deploy)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### Environment Settings
 
 Environment-specific settings are defined in `config/settings.py`:
 
-| Environment | VNet CIDR   | Purge Protection | Log Retention |
-| ----------- | ----------- | ---------------- | ------------- |
-| dev         | 10.0.0.0/16 | Disabled         | 30 days       |
-| staging     | 10.1.0.0/16 | Disabled         | 60 days       |
-| prod        | 10.2.0.0/16 | Enabled          | 365 days      |
+| Environment | VNet CIDR   | Purge Protection | Private Endpoints | Log Retention |
+| ----------- | ----------- | ---------------- | ----------------- | ------------- |
+| dev         | 10.0.0.0/16 | Disabled         | Disabled          | 30 days       |
+| qa          | 10.3.0.0/16 | Disabled         | Disabled          | 30 days       |
+| staging     | 10.1.0.0/16 | Disabled         | Enabled           | 60 days       |
+| prod        | 10.2.0.0/16 | Enabled          | Enabled           | 365 days      |
+
+### Feature Flags
+
+Control which resources are deployed per environment using feature flags in `config/settings.py`:
+
+| Feature        | Dev | QA  | Staging | Prod | Purpose             |
+| -------------- | --- | --- | ------- | ---- | ------------------- |
+| Container Apps | ✅  | ✅  | ✅      | ✅   | Microservices       |
+| Functions      | ✅  | ✅  | ✅      | ✅   | Serverless workers  |
+| Service Bus    | ✅  | ✅  | ✅      | ✅   | Messaging           |
+| SQL Database   | ✅  | ✅  | ✅      | ✅   | Primary database    |
+| API Management | ✅  | ❌  | ✅      | ✅   | API gateway         |
+| CDN            | ❌  | ❌  | ✅      | ✅   | Content delivery    |
+| Data Factory   | ✅  | ❌  | ❌      | ❌   | ETL (dev testing)   |
+| Redis Cache    | ✅  | ❌  | ❌      | ✅   | Caching             |
+| Cosmos DB      | ✅  | ❌  | ❌      | ❌   | NoSQL (dev testing) |
+
+This allows dev to have more experimental resources while keeping QA minimal and prod production-ready.
 
 ### Stack Configuration
 
 Stack-specific values in `Pulumi.<env>.yaml`:
 
 ```yaml
+encryptionsalt: v1:xxx... # Auto-generated per stack
 config:
   azure-native:location: westus2
-  azureinfra:owner: Platform Team
-  azureinfra:costCenter: IT-001
+  AzureInfra:owner: Crossroads Platform Team
+  AzureInfra:costCenter: IT-001
 ```
 
 ## Security Policies
