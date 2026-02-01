@@ -35,6 +35,21 @@ class MonitoringSettings:
 
 
 @dataclass
+class FeatureFlags:
+    """Feature flags to control which resources are deployed per environment."""
+
+    enable_container_apps: bool = True
+    enable_functions: bool = True
+    enable_service_bus: bool = True
+    enable_sql_database: bool = True
+    enable_api_management: bool = True
+    enable_cdn: bool = False
+    enable_data_factory: bool = False
+    enable_redis_cache: bool = False
+    enable_cosmos_db: bool = False
+
+
+@dataclass
 class EnvironmentSettings:
     """Complete settings for an environment."""
 
@@ -43,6 +58,7 @@ class EnvironmentSettings:
     network: NetworkSettings
     security: SecuritySettings
     monitoring: MonitoringSettings
+    features: FeatureFlags = field(default_factory=FeatureFlags)
     tags: dict[str, str] = field(default_factory=dict)
 
 
@@ -72,6 +88,17 @@ ENVIRONMENT_CONFIGS = {
             log_retention_days=30,
             daily_quota_gb=1.0,
         ),
+        features=FeatureFlags(
+            enable_container_apps=True,
+            enable_functions=True,
+            enable_service_bus=True,
+            enable_sql_database=True,
+            enable_api_management=True,
+            enable_cdn=False,
+            enable_data_factory=True,   # Dev: testing ETL pipelines
+            enable_redis_cache=True,    # Dev: testing caching
+            enable_cosmos_db=True,      # Dev: testing NoSQL
+        ),
     ),
     "qa": EnvironmentSettings(
         name="qa",
@@ -96,6 +123,17 @@ ENVIRONMENT_CONFIGS = {
         monitoring=MonitoringSettings(
             log_retention_days=30,
             daily_quota_gb=2.0,
+        ),
+        features=FeatureFlags(
+            enable_container_apps=True,
+            enable_functions=True,
+            enable_service_bus=True,
+            enable_sql_database=True,
+            enable_api_management=False,  # QA: no APIM needed
+            enable_cdn=False,
+            enable_data_factory=False,    # QA: minimal resources
+            enable_redis_cache=False,
+            enable_cosmos_db=False,
         ),
     ),
     "staging": EnvironmentSettings(
@@ -122,6 +160,17 @@ ENVIRONMENT_CONFIGS = {
             log_retention_days=60,
             daily_quota_gb=5.0,
         ),
+        features=FeatureFlags(
+            enable_container_apps=True,
+            enable_functions=True,
+            enable_service_bus=True,
+            enable_sql_database=True,
+            enable_api_management=True,
+            enable_cdn=True,              # Staging: test CDN before prod
+            enable_data_factory=False,
+            enable_redis_cache=False,
+            enable_cosmos_db=False,
+        ),
     ),
     "prod": EnvironmentSettings(
         name="prod",
@@ -146,6 +195,17 @@ ENVIRONMENT_CONFIGS = {
         monitoring=MonitoringSettings(
             log_retention_days=365,
             daily_quota_gb=None,  # No limit
+        ),
+        features=FeatureFlags(
+            enable_container_apps=True,
+            enable_functions=True,
+            enable_service_bus=True,
+            enable_sql_database=True,
+            enable_api_management=True,
+            enable_cdn=True,
+            enable_data_factory=False,
+            enable_redis_cache=True,      # Prod: caching for performance
+            enable_cosmos_db=False,
         ),
     ),
 }
